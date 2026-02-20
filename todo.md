@@ -31,7 +31,7 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
     - [x] Implement `getTier(address _worker)` view function.
     - [x] Implement `slash(address _worker, uint256 _amount)` function.
 
-- [ ] **Testing & Security**
+- [x] **Testing & Security**
     - [x] Write unit tests for all contracts (happy paths & edge cases).
     - [x] Test bonding and slashing mechanisms thoroughly.
     - [ ] Perform security audit (self-review or tools like Slither).
@@ -46,14 +46,14 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
     - [ ] Install and configure OpenClaw locally or on a server.
     - [ ] Connect OpenClaw to a chat interface (Telegram, WhatsApp, or Slack).
 
-- [ ] **Develop Agent Skills**
-    - [ ] **"Post Job" Skill:** Allow users to post bounties via chat (e.g., "I'm lazy, $500 for coffee").
-        - [ ] Parse user intent and extract job details.
-        - [ ] Interact with `LazyTaskMarketplace` to post the job.
-    - [ ] **"Verify Job Completion" Skill:** AI agent verifies evidence.
-        - [ ] Accept photo/video evidence URL.
-        - [ ] Use Vision LLM to analyze content (e.g., "Is this a cup of coffee?").
-        - [ ] Call `completeJob` on the contract if verified.
+- [x] **Develop Agent Skills**
+    - [x] **"Post Job" Skill:** Allow users to post bounties via chat (e.g., "I'm lazy, $500 for coffee").
+        - [x] Parse user intent and extract job details.
+        - [x] Interact with `LazyTaskMarketplace` to post the job.
+    - [x] **"Verify Job Completion" Skill:** AI agent verifies evidence.
+        - [x] Accept photo/video evidence URL.
+        - [x] Use Vision LLM to analyze content (e.g., "Is this a cup of coffee?").
+        - [x] Call `completeJob` on the contract if verified.
     - [ ] **"Wallet Integration" Skill:** Allow agent to sign transactions.
         - [ ] Securely manage keys (or use MPC/session keys).
         - [ ] Implement transaction signing for contract interactions.
@@ -67,13 +67,13 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
 
 ## Phase 3: Frontend & User Interface
 
-- [ ] **Frontend Setup**
-    - [ ] Initialize React/Next.js project.
-    - [ ] Integrate RainbowKit/Wagmi for wallet connection.
+- [x] **Frontend Setup**
+    - [x] Initialize React/Next.js project.
+    - [x] Integrate RainbowKit/Wagmi for wallet connection.
 
-- [ ] **Core Features UI**
-    - [ ] **Job Board:** Display available jobs with bounty and bond requirements.
-    - [ ] **Post Job:** Form to create new tasks (or chat interface integration).
+- [x] **Core Features UI**
+    - [x] **Job Board:** Display available jobs with bounty and bond requirements.
+    - [x] **Post Job:** Form to create new tasks (or chat interface integration).
     - [ ] **My Jobs:** Dashboard for customers (active jobs) and workers (accepted jobs).
     - [ ] **Profile/Reputation:** Display worker reputation score and history.
 
