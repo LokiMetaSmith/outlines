@@ -46,7 +46,7 @@ contract LazyTaskMarketplace is AccessControl {
     event JobAccepted(uint256 indexed jobId, address indexed worker);
     event JobCompleted(uint256 indexed jobId, address indexed worker, uint8 rating);
     event JobDisputed(uint256 indexed jobId, address indexed worker, string evidenceHash);
-    event JobResolved(uint256 indexed jobId, bool workerWins);
+    event JobResolved(uint256 indexed jobId, address indexed resolver, bool workerWins);
     event JobSlashed(uint256 indexed jobId, address indexed worker, uint256 amount);
     event EvidenceSubmitted(uint256 indexed jobId, address indexed worker, string evidenceHash);
     event FeeTaken(uint256 indexed jobId, uint256 fee, uint256 workerEarnings);
@@ -114,6 +114,21 @@ contract LazyTaskMarketplace is AccessControl {
         emit EvidenceSubmitted(_jobId, msg.sender, _evidenceHash);
     }
 
+    function _calculateFee(address _worker, uint256 _bounty) internal view returns (uint256 fee, uint256 workerEarnings) {
+        uint256 score = IReputationRegistry(reputationRegistry).reputationScores(_worker);
+        uint256 count = IReputationRegistry(reputationRegistry).getJobCount(_worker);
+        uint256 feeBps = platformFeeBps;
+
+        if (score >= 450 && count >= 5) {
+            feeBps = 0; // Platinum: 0% fee
+        } else if (score >= 400 && count >= 3) {
+            feeBps = 250; // Gold: 2.5% fee
+        }
+
+        fee = (_bounty * feeBps) / 10000;
+        workerEarnings = _bounty - fee;
+    }
+
     function completeJob(uint256 _jobId, uint8 _rating) public {
         Job storage job = jobs[_jobId];
         require(msg.sender == job.customer || hasRole(ORACLE_ROLE, msg.sender), "Not authorized");
@@ -126,19 +141,7 @@ contract LazyTaskMarketplace is AccessControl {
         Job storage job = jobs[_jobId];
         job.status = JobStatus.Completed;
 
-        // Calculate Fee with Kickbacks
-        uint256 score = IReputationRegistry(reputationRegistry).reputationScores(job.worker);
-        uint256 count = IReputationRegistry(reputationRegistry).getJobCount(job.worker);
-        uint256 feeBps = platformFeeBps;
-
-        if (score >= 450 && count >= 5) {
-            feeBps = 0; // Platinum: 0% fee
-        } else if (score >= 400 && count >= 3) {
-            feeBps = 250; // Gold: 2.5% fee
-        }
-
-        uint256 fee = (job.bounty * feeBps) / 10000;
-        uint256 workerEarnings = job.bounty - fee;
+        (uint256 fee, uint256 workerEarnings) = _calculateFee(job.worker, job.bounty);
 
         // Transfer bounty to worker
         (bool success, ) = payable(job.worker).call{value: workerEarnings}("");
@@ -179,7 +182,10 @@ contract LazyTaskMarketplace is AccessControl {
         if (_workerWins) {
             _finalizeJob(_jobId, _rating);
         } else {
+            // Customer wins: slash worker
+            job.status = JobStatus.Rejected;
             uint256 bond = job.workerBond;
+
             if (bond > 0) {
                 // Slash bond: send to customer as compensation
                 (bool success, ) = payable(job.customer).call{value: bond}("");
@@ -197,10 +203,9 @@ contract LazyTaskMarketplace is AccessControl {
                 require(success, "Bounty refund failed");
             }
 
-            job.status = JobStatus.Rejected;
             emit JobSlashed(_jobId, job.worker, bond);
         }
 
-        emit JobResolved(_jobId, _workerWins);
+        emit JobResolved(_jobId, msg.sender, _workerWins);
     }
 }

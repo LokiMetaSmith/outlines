@@ -23,7 +23,7 @@ contract ReputationRegistry is AccessControl {
     mapping(address => JobRecord[]) public workerHistory;
     mapping(address => uint256) public reputationScores;
     mapping(address => uint256) public totalRatings;
-    mapping(bytes32 => uint256) public minReputationScores;
+    mapping(string => uint256) public minReputationScores;
 
     event JobRecorded(address indexed worker, uint256 indexed jobId, uint8 rating);
     event EvidenceAdded(address indexed worker, uint256 indexed jobId, string evidenceHash);
@@ -39,7 +39,7 @@ contract ReputationRegistry is AccessControl {
     }
 
     function setMinReputationScore(string memory _jobType, uint256 _score) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        minReputationScores[keccak256(bytes(_jobType))] = _score;
+        minReputationScores[_jobType] = _score;
         emit MinScoreSet(_jobType, _score);
     }
 
@@ -103,10 +103,9 @@ contract ReputationRegistry is AccessControl {
 
     // Check eligibility for job tiers
     function checkEligibility(address _worker, string memory _jobType) external view returns (bool) {
-        uint256 minScore = minReputationScores[keccak256(bytes(_jobType))];
-        if (minScore == 0) return true; // No requirement
-
-        return reputationScores[_worker] >= minScore;
+        uint256 requiredScore = minReputationScores[_jobType];
+        if (requiredScore == 0) return true; // No requirement
+        return reputationScores[_worker] >= requiredScore;
     }
 
     function getWorkerHistory(address _worker) external view returns (JobRecord[] memory) {

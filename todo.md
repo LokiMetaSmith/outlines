@@ -14,15 +14,15 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
     - [x] Implement `acceptJob(uint256 _jobId)` function with bonding requirement.
     - [x] Implement `completeJob(uint256 _jobId, uint8 _rating)` function (customer or oracle trigger).
     - [x] Implement `disputeJob(uint256 _jobId, string _evidenceHash)` function.
-    - [x] Implement `resolveDispute(uint256 _jobId, bool _workerWins, uint8 _rating)` (replaced `slashBond`).
-    - [x] Add events for all major actions (JobPosted, JobAccepted, JobCompleted, JobDisputed).
+    - [x] Implement `resolveDispute(uint256 _jobId, bool _workerWins, uint8 _rating)` function (replaces `slashBond`).
+    - [x] Add events for all major actions (JobPosted, JobAccepted, JobCompleted, JobDisputed, JobResolved).
 
 - [x] **Implement `ReputationRegistry` Contract**
     - [x] Define `JobRecord` struct (jobId, rating, timestamp, bounty, evidenceHash).
     - [x] Implement `recordJob(address _worker, uint256 _jobId, uint8 _rating, uint256 _bounty)` function.
     - [x] Implement `updateScore(address _worker)` internal function.
     - [x] Implement `addEvidence(address _worker, uint256 _jobId, string _evidenceHash)` function.
-    - [x] Implement `checkEligibility(address _worker, string _jobType)` view function (with min score logic).
+    - [x] Implement `checkEligibility(address _worker, string _jobType)` view function (enforce min reputation scores).
 
 - [x] **Implement `RewardEngine` Contract**
     - [x] Create ERC-20 token (e.g., `LazyToken`).
@@ -61,9 +61,11 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
 - [ ] **Agentic Payments**
     - [ ] Explore and implement **x402** or **AP2** standards for autonomous payments.
     - [ ] Implement flow where agent initiates payment upon verification.
+    - [ ] Examine https://ethereum-magicians.org/t/erc-8165-agentic-on-chain-operation-interface/27773 for integration and support
+    - [ ] Examine https://ethereum-magicians.org/t/erc-8162-agent-subscription-protocol/27751 for integration and support
 
 - [ ] **Dispute Resolution**
-    - [x] Implement basic arbitrator role and dispute resolution flow.
+    - [x] Implement on-chain dispute resolution logic (`resolveDispute`, `ARBITRATOR_ROLE`).
     - [ ] Implement multi-agent coordination for disputes (one verifies, one arbitrates).
 
 ## Phase 3: Frontend & User Interface
