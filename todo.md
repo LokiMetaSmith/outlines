@@ -66,7 +66,7 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
 
 - [ ] **Dispute Resolution**
     - [x] Implement on-chain dispute resolution logic (`resolveDispute`, `ARBITRATOR_ROLE`).
-    - [ ] Implement multi-agent coordination for disputes (one verifies, one arbitrates).
+    - [x] Implement multi-agent coordination for disputes (one verifies, one arbitrates).
 
 ## Phase 3: Frontend & User Interface
 
