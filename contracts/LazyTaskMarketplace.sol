@@ -18,6 +18,7 @@ interface IRewardEngine {
 
 contract LazyTaskMarketplace is AccessControl {
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
+    bytes32 public constant ARBITRATOR_ROLE = keccak256("ARBITRATOR_ROLE");
 
     enum JobStatus { Posted, Accepted, Completed, Disputed, Rejected }
 
@@ -46,11 +47,13 @@ contract LazyTaskMarketplace is AccessControl {
     event JobCompleted(uint256 indexed jobId, address indexed worker, uint8 rating);
     event JobDisputed(uint256 indexed jobId, address indexed worker, string evidenceHash);
     event JobSlashed(uint256 indexed jobId, address indexed worker, uint256 amount);
+    event JobResolved(uint256 indexed jobId, address indexed resolver, bool workerWins);
     event EvidenceSubmitted(uint256 indexed jobId, address indexed worker, string evidenceHash);
     event FeeTaken(uint256 indexed jobId, uint256 fee, uint256 workerEarnings);
 
     constructor(address _reputationRegistry, address _rewardEngine) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ARBITRATOR_ROLE, msg.sender);
         reputationRegistry = _reputationRegistry;
         rewardEngine = _rewardEngine;
         treasury = msg.sender;
@@ -111,16 +114,9 @@ contract LazyTaskMarketplace is AccessControl {
         emit EvidenceSubmitted(_jobId, msg.sender, _evidenceHash);
     }
 
-    function completeJob(uint256 _jobId, uint8 _rating) public {
-        Job storage job = jobs[_jobId];
-        require(msg.sender == job.customer || hasRole(ORACLE_ROLE, msg.sender), "Not authorized");
-        require(job.status == JobStatus.Accepted, "Job not accepted");
-
-        job.status = JobStatus.Completed;
-
-        // Calculate Fee with Kickbacks
-        uint256 score = IReputationRegistry(reputationRegistry).reputationScores(job.worker);
-        uint256 count = IReputationRegistry(reputationRegistry).getJobCount(job.worker);
+    function _calculateFee(address _worker, uint256 _bounty) internal view returns (uint256 fee, uint256 workerEarnings) {
+        uint256 score = IReputationRegistry(reputationRegistry).reputationScores(_worker);
+        uint256 count = IReputationRegistry(reputationRegistry).getJobCount(_worker);
         uint256 feeBps = platformFeeBps;
 
         if (score >= 450 && count >= 5) {
@@ -129,8 +125,18 @@ contract LazyTaskMarketplace is AccessControl {
             feeBps = 250; // Gold: 2.5% fee
         }
 
-        uint256 fee = (job.bounty * feeBps) / 10000;
-        uint256 workerEarnings = job.bounty - fee;
+        fee = (_bounty * feeBps) / 10000;
+        workerEarnings = _bounty - fee;
+    }
+
+    function completeJob(uint256 _jobId, uint8 _rating) public {
+        Job storage job = jobs[_jobId];
+        require(msg.sender == job.customer || hasRole(ORACLE_ROLE, msg.sender), "Not authorized");
+        require(job.status == JobStatus.Accepted, "Job not accepted");
+
+        job.status = JobStatus.Completed;
+
+        (uint256 fee, uint256 workerEarnings) = _calculateFee(job.worker, job.bounty);
 
         // Transfer bounty to worker
         (bool success, ) = payable(job.worker).call{value: workerEarnings}("");
@@ -164,29 +170,61 @@ contract LazyTaskMarketplace is AccessControl {
         emit JobDisputed(_jobId, msg.sender, _evidenceHash);
     }
 
-    function slashBond(uint256 _jobId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function resolveDispute(uint256 _jobId, bool _workerWins, uint8 _rating) external onlyRole(ARBITRATOR_ROLE) {
         Job storage job = jobs[_jobId];
-        require(job.status == JobStatus.Disputed || job.status == JobStatus.Accepted, "Invalid status");
+        require(job.status == JobStatus.Disputed, "Job not disputed");
 
-        uint256 bond = job.workerBond;
-        if (bond > 0) {
-            // Slash bond: send to customer as compensation
-            (bool success, ) = payable(job.customer).call{value: bond}("");
-            require(success, "Bond transfer failed");
-            // Also slash tokens
-            try IRewardEngine(rewardEngine).slash(job.worker, bond) {} catch {}
+        if (_workerWins) {
+            // Worker wins: treat as completed
+            job.status = JobStatus.Completed;
+
+            (uint256 fee, uint256 workerEarnings) = _calculateFee(job.worker, job.bounty);
+
+            // Transfer bounty to worker
+            (bool success, ) = payable(job.worker).call{value: workerEarnings}("");
+            require(success, "Transfer failed");
+
+            if (fee > 0) {
+                (bool feeSuccess, ) = payable(treasury).call{value: fee}("");
+                require(feeSuccess, "Fee transfer failed");
+            }
+
+            // Return bond to worker
+            if (job.workerBond > 0) {
+                (bool bondSuccess, ) = payable(job.worker).call{value: job.workerBond}("");
+                require(bondSuccess, "Bond transfer failed");
+            }
+
+            IReputationRegistry(reputationRegistry).recordJob(job.worker, _jobId, _rating, job.bounty);
+            IRewardEngine(rewardEngine).issueRewards(job.worker, _rating);
+
+            emit JobCompleted(_jobId, job.worker, _rating);
+            emit FeeTaken(_jobId, fee, workerEarnings);
+        } else {
+            // Customer wins: slash worker
+            job.status = JobStatus.Rejected;
+            uint256 bond = job.workerBond;
+
+            if (bond > 0) {
+                // Slash bond: send to customer as compensation
+                (bool success, ) = payable(job.customer).call{value: bond}("");
+                require(success, "Bond transfer failed");
+                // Also slash tokens
+                try IRewardEngine(rewardEngine).slash(job.worker, bond) {} catch {}
+            }
+
+            // Record slash in reputation registry (penalize score)
+            try IReputationRegistry(reputationRegistry).recordSlash(job.worker, _jobId) {} catch {}
+
+            // Refund bounty to customer (since job is failed/slashed)
+            if (job.bounty > 0) {
+                (bool success, ) = payable(job.customer).call{value: job.bounty}("");
+                require(success, "Bounty refund failed");
+            }
+
+            emit JobSlashed(_jobId, job.worker, bond);
         }
 
-        // Record slash in reputation registry (penalize score)
-        try IReputationRegistry(reputationRegistry).recordSlash(job.worker, _jobId) {} catch {}
-
-        // Refund bounty to customer (since job is failed/slashed)
-        if (job.bounty > 0) {
-            (bool success, ) = payable(job.customer).call{value: job.bounty}("");
-            require(success, "Bounty refund failed");
-        }
-
-        job.status = JobStatus.Rejected;
-        emit JobSlashed(_jobId, job.worker, bond);
+        emit JobResolved(_jobId, msg.sender, _workerWins);
     }
 }
