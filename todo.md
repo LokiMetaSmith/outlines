@@ -4,36 +4,36 @@ This document outlines the tasks required to build the LazyTask Marketplace, a b
 
 ## Phase 1: Core Smart Contracts (MVP Scope)
 
-- [ ] **Setup Development Environment**
-    - [ ] Initialize Hardhat or Foundry project.
-    - [ ] Install dependencies (OpenZeppelin contracts, Chainlink).
+- [x] **Setup Development Environment**
+    - [x] Initialize Hardhat or Foundry project.
+    - [x] Install dependencies (OpenZeppelin contracts, Chainlink).
 
-- [ ] **Implement `LazyTaskMarketplace` Contract**
-    - [ ] Define `Job` struct (customer, worker, bounty, bondAmount, status, etc.).
-    - [ ] Implement `postJob(string _jobType, uint256 _bondRequired)` function.
-    - [ ] Implement `acceptJob(uint256 _jobId)` function with bonding requirement.
-    - [ ] Implement `completeJob(uint256 _jobId, uint8 _rating)` function (customer or oracle trigger).
-    - [ ] Implement `disputeJob(uint256 _jobId, string _evidenceHash)` function.
-    - [ ] Implement `slashBond(uint256 _jobId)` internal/admin function.
-    - [ ] Add events for all major actions (JobPosted, JobAccepted, JobCompleted, JobDisputed).
+- [x] **Implement `LazyTaskMarketplace` Contract**
+    - [x] Define `Job` struct (customer, worker, bounty, bondAmount, status, etc.).
+    - [x] Implement `postJob(string _jobType, uint256 _bondRequired)` function.
+    - [x] Implement `acceptJob(uint256 _jobId)` function with bonding requirement.
+    - [x] Implement `completeJob(uint256 _jobId, uint8 _rating)` function (customer or oracle trigger).
+    - [x] Implement `disputeJob(uint256 _jobId, string _evidenceHash)` function.
+    - [x] Implement `slashBond(uint256 _jobId)` internal/admin function.
+    - [x] Add events for all major actions (JobPosted, JobAccepted, JobCompleted, JobDisputed).
 
-- [ ] **Implement `ReputationRegistry` Contract**
-    - [ ] Define `JobRecord` struct (jobId, rating, timestamp, bounty, evidenceHash).
-    - [ ] Implement `recordJob(address _worker, uint256 _jobId, uint8 _rating, uint256 _bounty)` function.
-    - [ ] Implement `updateScore(address _worker)` internal function.
-    - [ ] Implement `addEvidence(address _worker, uint256 _jobId, string _evidenceHash)` function.
-    - [ ] Implement `checkEligibility(address _worker, string _jobType)` view function.
+- [x] **Implement `ReputationRegistry` Contract**
+    - [x] Define `JobRecord` struct (jobId, rating, timestamp, bounty, evidenceHash).
+    - [x] Implement `recordJob(address _worker, uint256 _jobId, uint8 _rating, uint256 _bounty)` function.
+    - [x] Implement `updateScore(address _worker)` internal function.
+    - [x] Implement `addEvidence(address _worker, uint256 _jobId, string _evidenceHash)` function.
+    - [x] Implement `checkEligibility(address _worker, string _jobType)` view function.
 
-- [ ] **Implement `RewardEngine` Contract**
-    - [ ] Create ERC-20 token (e.g., `LazyToken`).
-    - [ ] Implement `issueRewards(address _worker, uint8 _rating)` function.
-    - [ ] Implement `updateCredit(address _worker)` internal function.
-    - [ ] Implement `getTier(address _worker)` view function.
-    - [ ] Implement `slash(address _worker, uint256 _amount)` function.
+- [x] **Implement `RewardEngine` Contract**
+    - [x] Create ERC-20 token (e.g., `LazyToken`).
+    - [x] Implement `issueRewards(address _worker, uint8 _rating)` function.
+    - [x] Implement `updateCredit(address _worker)` internal function.
+    - [x] Implement `getTier(address _worker)` view function.
+    - [x] Implement `slash(address _worker, uint256 _amount)` function.
 
 - [ ] **Testing & Security**
-    - [ ] Write unit tests for all contracts (happy paths & edge cases).
-    - [ ] Test bonding and slashing mechanisms thoroughly.
+    - [x] Write unit tests for all contracts (happy paths & edge cases).
+    - [x] Test bonding and slashing mechanisms thoroughly.
     - [ ] Perform security audit (self-review or tools like Slither).
 
 - [ ] **Deployment**
