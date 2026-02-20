@@ -70,4 +70,8 @@ contract ReputationRegistry is AccessControl {
         // return score >= 450;
         return true;
     }
+
+    function getWorkerHistory(address _worker) external view returns (JobRecord[] memory) {
+        return workerHistory[_worker];
+    }
 }
