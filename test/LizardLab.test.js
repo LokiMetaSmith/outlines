@@ -5,6 +5,8 @@ describe("Lizard Lab & Lounge Integration", function () {
   let LizardToken, lizardToken;
   let LizardLounge, lizardLounge;
   let ReputationRegistry, reputationRegistry;
+  let LazyTaskMarketplace, lazyTaskMarketplace; // Added for mock
+  let RewardEngine, rewardEngine; // Added for mock
   let owner, user1, user2;
 
   beforeEach(async function () {
@@ -20,9 +22,30 @@ describe("Lizard Lab & Lounge Integration", function () {
     lizardToken = await LizardToken.deploy();
     await lizardToken.waitForDeployment();
 
+    // Mock/Deploy other dependencies if needed by constructor
+    // The merged constructor expects: (ReputationRegistry, Marketplace, LizardToken)
+    // We can use a dummy address for Marketplace or deploy it properly.
+    // Let's deploy properly to avoid issues.
+
+    RewardEngine = await ethers.getContractFactory("RewardEngine");
+    rewardEngine = await RewardEngine.deploy();
+    await rewardEngine.waitForDeployment();
+
+    LazyTaskMarketplace = await ethers.getContractFactory("LazyTaskMarketplace");
+    lazyTaskMarketplace = await LazyTaskMarketplace.deploy(
+        await reputationRegistry.getAddress(),
+        await rewardEngine.getAddress()
+    );
+    await lazyTaskMarketplace.waitForDeployment();
+
+
     // Deploy LizardLounge
     LizardLounge = await ethers.getContractFactory("LizardLounge");
-    lizardLounge = await LizardLounge.deploy(await reputationRegistry.getAddress(), await lizardToken.getAddress());
+    lizardLounge = await LizardLounge.deploy(
+        await reputationRegistry.getAddress(),
+        await lazyTaskMarketplace.getAddress(), // Added Marketplace address
+        await lizardToken.getAddress()
+    );
     await lizardLounge.waitForDeployment();
   });
 
