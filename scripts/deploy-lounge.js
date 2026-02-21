@@ -27,9 +27,20 @@ async function main() {
   const lazyTaskMarketplaceAddress = await lazyTaskMarketplace.getAddress();
   console.log("LazyTaskMarketplace deployed:", lazyTaskMarketplaceAddress);
 
+  // Deploy LizardToken
+  const LizardToken = await hre.ethers.getContractFactory("LizardToken");
+  const lizardToken = await LizardToken.deploy();
+  await lizardToken.waitForDeployment();
+  const lizardTokenAddress = await lizardToken.getAddress();
+  console.log("LizardToken deployed:", lizardTokenAddress);
+
   // Deploy LizardLounge
   const LizardLounge = await hre.ethers.getContractFactory("LizardLounge");
-  const lizardLounge = await LizardLounge.deploy(reputationRegistryAddress, lazyTaskMarketplaceAddress);
+  const lizardLounge = await LizardLounge.deploy(
+    reputationRegistryAddress,
+    lazyTaskMarketplaceAddress,
+    lizardTokenAddress
+  );
   await lizardLounge.waitForDeployment();
   const lizardLoungeAddress = await lizardLounge.getAddress();
   console.log("LizardLounge deployed:", lizardLoungeAddress);
